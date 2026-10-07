@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PeakSync | Distribution Grid & EV Load Simulation</title>
+  <style>
+    :root {
+      /* Apple & Clean Hardware Tech Palette */
+      --bg-page: #f5f5f7;
+      --bg-card: #ffffff;
+      --bg-card-subtle: #f8fafc;
+      --border: #e2e8f0;
+      --border-focus: #cbd5e1;
+      
+      --text-main: #1d1d1f;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+
+      /* Pastel Accent Tones */
+      --pastel-blue-bg: #e0f2fe;
+      --pastel-blue-text: #0284c7;
+      --pastel-green-bg: #dcfce7;
+      --pastel-green-text: #16a34a;
+      --pastel-amber-bg: #fef3c7;
+      --pastel-amber-text: #b45309;
+      --pastel-rose-bg: #ffe4e6;
+      --pastel-rose-text: #e11d48;
+      --pastel-slate-bg: #f1f5f9;
+      --pastel-slate-text: #475569;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", Consolas, monospace;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+      --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-page);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Minimalist Navigation Header */
+    header {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+    .brand-mark {
+      width: 10px;
+      height: 10px;
+      background: #0ea5e9;
+      border-radius: 50%;
+    }
+    .header-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: var(--pastel-slate-bg);
+      color: var(--pastel-slate-text);
+      padding: 0.3rem 0.65rem;
+      border-radius: 9999px;
+      font-weight: 500;
+    }
+
+    /* Container */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3.5rem 1.5rem;
+      width: 100%;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+    .hero-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: var(--pastel-blue-bg);
+      color: var(--pastel-blue-text);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: clamp(2.1rem, 4.5vw, 3.1rem);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.18;
+      color: var(--text-main);
+      margin-bottom: 1rem;
+    }
+    h1 span {
+      color: #0284c7;
+    }
+    .hero-desc {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 660px;
+      margin: 0 auto;
+      font-weight: 400;
+    }
+
+    /* 3-Step Overview Grid */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 3.5rem;
+    }
+    .step-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .step-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card);
+    }
+    .step-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+    }
+    .step-1-tag { background: var(--pastel-slate-bg); color: var(--pastel-slate-text); }
+    .step-2-tag { background: var(--pastel-blue-bg); color: var(--pastel-blue-text); }
+    .step-3-tag { background: var(--pastel-amber-bg); color: var(--pastel-amber-text); }
+    .step-card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: var(--text-main);
+    }
+    .step-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Interactive Feeder Calculator */
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.3rem;
+      color: var(--text-main);
+    }
+    .section-subtitle {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 3.5rem;
+    }
+    .slider-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 1.75rem;
+    }
+    @media (max-width: 650px) { .slider-columns { grid-template-columns: 1fr; gap: 1.25rem; } }
+    .control-block { display: flex; flex-direction: column; gap: 0.5rem; }
+    .control-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+    .control-meta strong {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: #0284c7;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #0284c7;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+      border: 2px solid #ffffff;
+    }
+    .feeder-stats {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      text-align: center;
+    }
+    .stat-item span {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.2rem;
+    }
+    .stat-item strong {
+      font-family: var(--font-mono);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* Collapsible Drawers (Apple-Style Accordion) */
+    .drawers-group {
+      margin-bottom: 3.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .drawer {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.15s ease;
+    }
+    .drawer:hover { border-color: var(--border-focus); }
+    .drawer-header {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 1.1rem 1.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      text-align: left;
+    }
+    .drawer-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .pill {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .drawer-caret {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+    .drawer.open .drawer-caret {
+      transform: rotate(180deg);
+    }
+    .drawer-content {
+      display: none;
+      padding: 0 1.4rem 1.25rem 1.4rem;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 0.9rem;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .drawer.open .drawer-content { display: block; }
+    .drawer-content code {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      background: var(--pastel-slate-bg);
+      color: var(--text-main);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    /* EEE Lab: Power & 3-NAND Logic Gate Playground */
+    .lab-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 2rem;
+    }
+    .power-readout {
+      background: var(--pastel-slate-bg);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .power-readout span {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .power-readout strong {
+      font-family: var(--font-mono);
+      font-size: 1.35rem;
+      color: var(--text-main);
+    }
+    
+    /* Gate Schematic Section */
+    .schematic-header {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.75rem;
+    }
+    .switches-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .custom-check {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+    }
+    .custom-check input {
+      accent-color: #0284c7;
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Gates Cards Grid */
+    .gates-canvas {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .gate-diagram-card {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      text-align: center;
+    }
+    .gate-diagram-card h4 {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+      text-align: left;
+    }
+    .nand-svg-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
+    svg.nand-symbol {
+      width: 170px;
+      height: 85px;
+    }
+    .wire { stroke: #94a3b8; stroke-width: 2.5; stroke-linecap: round; transition: stroke 0.2s; }
+    .wire-high { stroke: #16a34a !important; } /* Pastel green for High / 1 */
+    .wire-low { stroke: #94a3b8 !important; }  /* Muted slate for Low / 0 */
+    .gate-body { fill: #ffffff; stroke: #1e293b; stroke-width: 2.5; stroke-linejoin: round; }
+    .bubble { fill: #ffffff; stroke: #1e293b; stroke-width: 2.5; }
+    .pin-label { font-family: var(--font-mono); font-size: 11px; fill: #64748b; font-weight: 600; }
+    
+    .gate-table {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      display: flex;
+      justify-content: space-between;
+      padding: 0.4rem 0.6rem;
+      background: #ffffff;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    .bit-tag {
+      font-weight: 700;
+      padding: 0 0.35rem;
+      border-radius: 4px;
+    }
+    .b-1 { color: #16a34a; background: var(--pastel-green-bg); }
+    .b-0 { color: #64748b; background: var(--pastel-slate-bg); }
+
+    /* Relay Status Banner */
+    .relay-card {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .relay-energized {
+      background: var(--pastel-green-bg);
+      color: var(--pastel-green-text);
+      border: 1px solid #bbf7d0;
+    }
+    .relay-tripped {
+      background: var(--pastel-rose-bg);
+      color: var(--pastel-rose-text);
+      border: 1px solid #fecdd3;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-light);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header>
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <span>PeakSync</span>
+    </div>
+    <div class="header-tag">Auckland LV Feeder Study</div>
+  </header>
+
+  <div class="container">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge">Grid Telemetry &amp; Physics</div>
+      <h1>Predicting <span>Substation Overload</span> from Home EV Charging</h1>
+      <p class="hero-desc">
+        A simulation analyzing the thermal load on Auckland's 100&nbsp;kVA neighborhood street transformers during peak 6:00&nbsp;PM – 10:00&nbsp;PM charging windows.
+      </p>
+    </div>
+
+    <!-- 3-Step Clean Overview -->
+    <div class="steps-grid">
+      <div class="step-card">
+        <span class="step-tag step-1-tag">01 / SUBSTATION</span>
+        <h3>The Green Street Box</h3>
+        <p>A typical residential street runs off a single 100&nbsp;kVA ground-mount transformer. Built decades ago, it was sized for standard home lighting and appliances.</p>
+      </div>
+      <div class="step-card">
+        <span class="step-tag step-2-tag">02 / LOAD SPIKE</span>
+        <h3>The 7.4 kW EV Draw</h3>
+        <p>A Level-2 home EV charger draws 32&nbsp;Amps continuously (7.4&nbsp;kW). Just 10 to 12 EVs charging simultaneously can fully saturate an entire street's capacity.</p>
+      </div>
+      <div class="step-card">
+        <span class="step-tag step-3-tag">03 / CONGESTION</span>
+        <h3>The 6:00 PM Peak</h3>
+        <p>When residents return home and plug in concurrently at dinner, high domestic demand plus vehicle charging risks overheating transformer windings and blowing main fuses.</p>
+      </div>
+    </div>
+
+    <!-- Interactive Feeder Stress Calculator -->
+    <h2 class="section-title">Feeder Load Calculator</h2>
+    <p class="section-subtitle">Adjust the parameters below to evaluate transformer utilization.</p>
+    
+    <div class="panel">
+      <div class="slider-columns">
+        <div class="control-block">
+          <div class="control-meta">
+            <span>Neighborhood Households</span>
+            <strong id="homesNum">35 Homes</strong>
+          </div>
+          <input type="range" id="homesSlider" min="15" max="60" value="35" step="1" />
+          <span style="font-size:0.75rem; color:var(--text-light);">Standard evening baseline: 2.0 kW / home</span>
+        </div>
+        <div class="control-block">
+          <div class="control-meta">
+            <span>Simultaneous 7.4 kW EVs</span>
+            <strong id="evsNum">7 Vehicles</strong>
+          </div>
+          <input type="range" id="evsSlider" min="0" max="25" value="7" step="1" />
+          <span style="font-size:0.75rem; color:var(--text-light);">Continuous draw: 32 Amps @ 230 V single-phase</span>
+        </div>
+      </div>
+
+      <div class="feeder-stats">
+        <div class="stat-item">
+          <span>Total Demand</span>
+          <strong id="totalKW">121.8 kW</strong>
+        </div>
+        <div class="stat-item">
+          <span>Transformer Stress</span>
+          <strong id="txStress">121.8%</strong>
+        </div>
+        <div class="stat-item">
+          <span>Thermal Margin</span>
+          <strong id="txStatus" style="color:var(--pastel-amber-text);">OVERLOAD</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collapsible Engineering Drawers -->
+    <h2 class="section-title">Technical Specifications</h2>
+    <p class="section-subtitle">Select any category to expand physical equations and circuit diagrams.</p>
+
+    <div class="drawers-group">
+      <div class="drawer open">
+        <button class="drawer-header" onclick="toggleDrawer(this)">
+          <div class="drawer-title">
+            <span class="pill" style="background:var(--pastel-blue-bg); color:var(--pastel-blue-text);">CIRCUIT</span>
+            Single-Phase &amp; Three-Phase Math
+          </div>
+          <span class="drawer-caret">&#9660;</span>
+        </button>
+        <div class="drawer-content">
+          <p>Single-phase real power is governed by <code>P = V &times; I &times; cos(&theta;)</code>. With standard Level-2 chargers running at unity power factor on a 230&nbsp;V supply at 32&nbsp;A, the demand is precisely <strong>7.36&nbsp;kW</strong>.</p>
+          <p>Uncoordinated single-phase vehicle allocation across 3-phase street mains induces neutral return current and voltage unbalance between phases.</p>
+        </div>
+      </div>
+
+      <div class="drawer">
+        <button class="drawer-header" onclick="toggleDrawer(this)">
+          <div class="drawer-title">
+            <span class="pill" style="background:var(--pastel-amber-bg); color:var(--pastel-amber-text);">THERMAL</span>
+            Transformer Oil Time-Constants
+          </div>
+          <span class="drawer-caret">&#9660;</span>
+        </button>
+        <div class="drawer-content">
+          <p>Substation transformers do not trip immediately at 101% load. Large thermal mass in the mineral insulating oil buffers short peaks with a 2 to 3 hour time constant.</p>
+          <p>However, when EV charging lasts continuously for 5+ hours, core temperatures exceed 110&deg;C, accelerating insulation paper degradation exponentially.</p>
+        </div>
+      </div>
+
+      <div class="drawer">
+        <button class="drawer-header" onclick="toggleDrawer(this)">
+          <div class="drawer-title">
+            <span class="pill" style="background:var(--pastel-slate-bg); color:var(--pastel-slate-text);">STOCHASTIC</span>
+            Monte Carlo Commute Distributions
+          </div>
+          <span class="drawer-caret">&#9660;</span>
+        </button>
+        <div class="drawer-content">
+          <p>Rather than assuming every car plugs in simultaneously, we simulate real driver patterns with probability distributions: commuting distance (battery depth-of-discharge) and return-home arrival times.</p>
+          <p>This allows grid planners to determine the exact EV penetration threshold (e.g., 28% of homes) before street fuses trip.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- EEE Lab: Power & 3-NAND Logic Gate Playground -->
+    <h2 class="section-title">Interactive EEE Lab: Power &amp; NAND Gate Circuit</h2>
+    <p class="section-subtitle">
+      Adjust Voltage and Current to test Ohm's Law, and watch how <strong>3 standard NAND gates</strong> with live schematic symbols make protection decisions.
+    </p>
+
+    <div class="lab-box">
+      <!-- Voltage & Current Sliders -->
+      <div class="slider-columns" style="margin-bottom: 1.25rem;">
+        <div class="control-block">
+          <div class="control-meta">
+            <span>Circuit Voltage (V)</span>
+            <strong id="vLabel">230 V</strong>
+          </div>
+          <input type="range" id="vSlider" min="200" max="250" value="230" step="1" />
+        </div>
+        <div class="control-block">
+          <div class="control-meta">
+            <span>Current Draw (I)</span>
+            <strong id="iLabel">32 A</strong>
+          </div>
+          <input type="range" id="iSlider" min="0" max="50" value="32" step="1" />
+        </div>
+      </div>
+
+      <!-- Power Calculation Display -->
+      <div class="power-readout">
+        <span>Calculated Real Power (P = V &times; I)</span>
+        <strong id="pResult">7,360 W (7.36 kW)</strong>
+      </div>
+
+      <!-- Digital Logic Interlock -->
+      <div class="schematic-header">Hardware Protection: 3-NAND Interlock Circuit</div>
+      <div class="switches-row">
+        <label class="custom-check">
+          <input type="checkbox" id="peakCheck" checked />
+          <span>Peak Grid Window Active (6:00 PM – 10:00 PM)</span>
+        </label>
+        <label class="custom-check">
+          <input type="checkbox" id="armCheck" checked />
+          <span>Protection Interlock Armed</span>
+        </label>
+      </div>
+
+      <!-- Gate Schematics with True Symbols -->
+      <div class="gates-canvas">
+        
+        <!-- Gate 1 -->
+        <div class="gate-diagram-card">
+          <h4>NAND Gate #1 &middot; Detection</h4>
+          <div class="nand-svg-wrap">
+            <svg class="nand-symbol" viewBox="0 0 160 80">
+              <!-- Pin A -->
+              <line id="w1a" class="wire" x1="10" y1="25" x2="50" y2="25" />
+              <text x="5" y="28" class="pin-label">A</text>
+              <!-- Pin B -->
+              <line id="w1b" class="wire" x1="10" y1="55" x2="50" y2="55" />
+              <text x="5" y="58" class="pin-label">B</text>
+              <!-- NAND Body -->
+              <path class="gate-body" d="M 50,15 L 75,15 A 25,25 0 0,1 75,65 L 50,65 Z" />
+              <!-- Inversion Bubble -->
+              <circle class="bubble" cx="104" cy="40" r="4" />
+              <!-- Output Wire -->
+              <line id="w1out" class="wire" x1="108" y1="40" x2="150" y2="40" />
+              <text x="152" y="44" class="pin-label">Y1</text>
+            </svg>
+          </div>
+          <div class="gate-table">
+            <span>A: <strong id="g1a-val" class="bit-tag b-1">1</strong></span>
+            <span>B: <strong id="g1b-val" class="bit-tag b-1">1</strong></span>
+            <span>OUT: <strong id="g1o-val" class="bit-tag b-0">0</strong></span>
+          </div>
+        </div>
+
+        <!-- Gate 2 -->
+        <div class="gate-diagram-card">
+          <h4>NAND Gate #2 &middot; Inverter</h4>
+          <div class="nand-svg-wrap">
+            <svg class="nand-symbol" viewBox="0 0 160 80">
+              <!-- Inputs tied together from Gate 1 output -->
+              <line id="w2in" class="wire" x1="10" y1="40" x2="35" y2="40" />
+              <line id="w2a" class="wire" x1="35" y1="25" x2="50" y2="25" />
+              <line id="w2b" class="wire" x1="35" y1="55" x2="50" y2="55" />
+              <line class="wire" x1="35" y1="25" x2="35" y2="55" />
+              <text x="5" y="44" class="pin-label">Y1</text>
+              <!-- NAND Body -->
+              <path class="gate-body" d="M 50,15 L 75,15 A 25,25 0 0,1 75,65 L 50,65 Z" />
+              <!-- Inversion Bubble -->
+              <circle class="bubble" cx="104" cy="40" r="4" />
+              <!-- Output Wire -->
+              <line id="w2out" class="wire" x1="108" y1="40" x2="150" y2="40" />
+              <text x="152" y="44" class="pin-label">Y2</text>
+            </svg>
+          </div>
+          <div class="gate-table">
+            <span>IN: <strong id="g2in-val" class="bit-tag b-0">0</strong></span>
+            <span>FUNCTION: NOT(Y1)</span>
+            <span>OUT: <strong id="g2o-val" class="bit-tag b-1">1</strong></span>
+          </div>
+        </div>
+
+        <!-- Gate 3 -->
+        <div class="gate-diagram-card">
+          <h4>NAND Gate #3 &middot; Interlock Trip</h4>
+          <div class="nand-svg-wrap">
+            <svg class="nand-symbol" viewBox="0 0 160 80">
+              <!-- Pin A (Y2) -->
+              <line id="w3a" class="wire" x1="10" y1="25" x2="50" y2="25" />
+              <text x="5" y="28" class="pin-label">Y2</text>
+              <!-- Pin B (Armed) -->
+              <line id="w3b" class="wire" x1="10" y1="55" x2="50" y2="55" />
+              <text x="5" y="58" class="pin-label">ARM</text>
+              <!-- NAND Body -->
+              <path class="gate-body" d="M 50,15 L 75,15 A 25,25 0 0,1 75,65 L 50,65 Z" />
+              <!-- Inversion Bubble -->
+              <circle class="bubble" cx="104" cy="40" r="4" />
+              <!-- Output Wire -->
+              <line id="w3out" class="wire" x1="108" y1="40" x2="150" y2="40" />
+              <text x="152" y="44" class="pin-label">TRIP</text>
+            </svg>
+          </div>
+          <div class="gate-table">
+            <span>Y2: <strong id="g3a-val" class="bit-tag b-1">1</strong></span>
+            <span>ARM: <strong id="g3b-val" class="bit-tag b-1">1</strong></span>
+            <span>OUT: <strong id="g3o-val" class="bit-tag b-0">0</strong></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Relay State -->
+      <div id="relayBox" class="relay-card relay-tripped">
+        <span>CIRCUIT BREAKER RELAY STATUS:</span>
+        <span id="relayText">TRIPPED (CURTAILMENT ACTIVE)</span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    PeakSync Technologies &copy; 2026 &middot; Low-Voltage Distribution Simulation &middot; Auckland, NZ
+  </footer>
+
+  <script>
+    // Accordion Toggle
+    function toggleDrawer(btn) {
+      const drawer = btn.parentElement;
+      drawer.classList.toggle('open');
+    }
+
+    // Feeder Calculation Logic
+    const homesSlider = document.getElementById('homesSlider');
+    const evsSlider = document.getElementById('evsSlider');
+    const homesNum = document.getElementById('homesNum');
+    const evsNum = document.getElementById('evsNum');
+    const totalKW = document.getElementById('totalKW');
+    const txStress = document.getElementById('txStress');
+    const txStatus = document.getElementById('txStatus');
+
+    function updateFeeder() {
+      const homes = parseInt(homesSlider.value);
+      const evs = parseInt(evsSlider.value);
+
+      homesNum.textContent = homes + ' Homes';
+      evsNum.textContent = evs + ' Vehicles';
+
+      const baseLoad = homes * 2.0;
+      const evLoad = evs * 7.4;
+      const total = baseLoad + evLoad;
+      const stress = (total / 100) * 100;
+
+      totalKW.textContent = total.toFixed(1) + ' kW';
+      txStress.textContent = stress.toFixed(1) + '%';
+
+      if (stress <= 100) {
+        txStatus.textContent = 'NOMINAL';
+        txStatus.style.color = 'var(--pastel-green-text)';
+      } else if (stress <= 125) {
+        txStatus.textContent = 'OVERLOAD';
+        txStatus.style.color = 'var(--pastel-amber-text)';
+      } else {
+        txStatus.textContent = 'CRITICAL';
+        txStatus.style.color = 'var(--pastel-rose-text)';
+      }
+    }
+
+    homesSlider.addEventListener('input', updateFeeder);
+    evsSlider.addEventListener('input', updateFeeder);
+
+    // EEE Lab: Power + NAND Logic
+    const vSlider = document.getElementById('vSlider');
+    const iSlider = document.getElementById('iSlider');
+    const vLabel = document.getElementById('vLabel');
+    const iLabel = document.getElementById('iLabel');
+    const pResult = document.getElementById('pResult');
+    const peakCheck = document.getElementById('peakCheck');
+    const armCheck = document.getElementById('armCheck');
+
+    // Wire Elements
+    const w1a = document.getElementById('w1a');
+    const w1b = document.getElementById('w1b');
+    const w1out = document.getElementById('w1out');
+    const w2in = document.getElementById('w2in');
+    const w2a = document.getElementById('w2a');
+    const w2b = document.getElementById('w2b');
+    const w2out = document.getElementById('w2out');
+    const w3a = document.getElementById('w3a');
+    const w3b = document.getElementById('w3b');
+    const w3out = document.getElementById('w3out');
+
+    // Bit text tags
+    const g1aVal = document.getElementById('g1a-val');
+    const g1bVal = document.getElementById('g1b-val');
+    const g1oVal = document.getElementById('g1o-val');
+    const g2inVal = document.getElementById('g2in-val');
+    const g2oVal = document.getElementById('g2o-val');
+    const g3aVal = document.getElementById('g3a-val');
+    const g3bVal = document.getElementById('g3b-val');
+    const g3oVal = document.getElementById('g3o-val');
+
+    const relayBox = document.getElementById('relayBox');
+    const relayText = document.getElementById('relayText');
+
+    function nand(a, b) {
+      return !(a && b) ? 1 : 0;
+    }
+
+    function setWireState(lineEl, val) {
+      if (val === 1) {
+        lineEl.classList.add('wire-high');
+        lineEl.classList.remove('wire-low');
+      } else {
+        lineEl.classList.add('wire-low');
+        lineEl.classList.remove('wire-high');
+      }
+    }
+
+    function setBitTag(tagEl, val) {
+      tagEl.textContent = val;
+      tagEl.className = 'bit-tag ' + (val === 1 ? 'b-1' : 'b-0');
+    }
+
+    function updateLab() {
+      const V = parseInt(vSlider.value);
+      const I = parseInt(iSlider.value);
+      const P = V * I;
+
+      vLabel.textContent = V + ' V';
+      iLabel.textContent = I + ' A';
+      pResult.textContent = P.toLocaleString() + ' W (' + (P / 1000).toFixed(2) + ' kW)';
+
+      // High Load threshold: over 6.0 kW
+      const isHighLoad = P > 6000 ? 1 : 0;
+      const isPeak = peakCheck.checked ? 1 : 0;
+      const isArmed = armCheck.checked ? 1 : 0;
+
+      // Gate 1: Detector NAND(HighLoad, Peak)
+      const out1 = nand(isHighLoad, isPeak);
+
+      // Gate 2: Inverter NAND(out1, out1)
+      const out2 = nand(out1, out1);
+
+      // Gate 3: Trigger NAND(out2, Armed) -> Active low trip
+      const out3 = nand(out2, isArmed);
+
+      // Update Gate 1 wires & tags
+      setWireState(w1a, isHighLoad);
+      setWireState(w1b, isPeak);
+      setWireState(w1out, out1);
+      setBitTag(g1aVal, isHighLoad);
+      setBitTag(g1bVal, isPeak);
+      setBitTag(g1oVal, out1);
+
+      // Update Gate 2 wires & tags
+      setWireState(w2in, out1);
+      setWireState(w2a, out1);
+      setWireState(w2b, out1);
+      setWireState(w2out, out2);
+      setBitTag(g2inVal, out1);
+      setBitTag(g2oVal, out2);
+
+      // Update Gate 3 wires & tags
+      setWireState(w3a, out2);
+      setWireState(w3b, isArmed);
+      setWireState(w3out, out3);
+      setBitTag(g3aVal, out2);
+      setBitTag(g3bVal, isArmed);
+      setBitTag(g3oVal, out3);
+
+      // Relay Active Low (0 = Tripped)
+      if (out3 === 0) {
+        relayBox.className = 'relay-card relay-tripped';
+        relayText.textContent = 'TRIPPED (CURTAILMENT ACTIVE)';
+      } else {
+        relayBox.className = 'relay-card relay-energized';
+        relayText.textContent = 'CLOSED / ENERGIZED (NOMINAL)';
+      }
+    }
+
+    vSlider.addEventListener('input', updateLab);
+    iSlider.addEventListener('input', updateLab);
+    peakCheck.addEventListener('change', updateLab);
+    armCheck.addEventListener('change', updateLab);
+
+    // Initial load
+    updateFeeder();
+    updateLab();
+  </script>
+</body>
+</html>
